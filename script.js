@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const randomizeButton = document.getElementById('randomize-button');
     const categoryButtons = document.querySelectorAll('.category-button');
 
-    // Mappings to make categories look more professional in the Display Card
+    // 1. Mappings for professional display names
     const categoryPrettyNames = {
         "Standing Movement": "Physical Reset",
         "Sitting Movement": "Desk Mobility",
@@ -19,15 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
         "Floor Work (Yoga & Stretching)": "Deep Stretch",
         "Pain Management": "Somatic Relief",
         "Journal Prompt": "Self-Reflection",
-        "Neck Mobility & Relief": "Tension Release"
-        "Social Connection": "Team Connection",   
-        "Workspace Zen": "Environment" 
+        "Neck Mobility & Relief": "Tension Release",
+        "Social Connection": "Team Connection",
+        "Workspace Zen": "Environment",
         "Creative Spark": "Creative Spark",
         "Productivity Flow": "Deep Work",
-        "Evening Wind-Down": "Shutdown Ritual" 
+        "Evening Wind-Down": "Shutdown Ritual"
     };
 
-    // Icons to add visual flair to the cards
+    // 2. Icons for the cards
     const categoryIcons = {
         "Standing Movement": "🧍",
         "Sitting Movement": "🪑",
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         "Floor Work (Yoga & Stretching)": "🧘",
         "Pain Management": "❤️‍🩹",
         "Journal Prompt": "📓",
-        "Neck Mobility & Relief": "🧣"
+        "Neck Mobility & Relief": "🧣",
         "Social Connection": "💬",
         "Workspace Zen": "🪴",
         "Creative Spark": "💡",
@@ -50,6 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
         "Evening Wind-Down": "🌙"
     };
 
+    // ==========================================
+    //  MASSIVE DATABASE OF ACTIVITIES
+    // ==========================================
+    const allActivities = [
     
     const allActivities = [
       
@@ -149,9 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
       { category: "Sitting Movement", title: "Yawn", description: "Force a yawn to stretch face." },
       { category: "Sitting Movement", title: "Lion Breath", description: "Stick tongue out, exhale hard." },
       { category: "Sitting Movement", title: "Body Scan", description: "Mentally scan body for tension." },
-      { category: "Sitting Movement", title: "Grounding", description: "Feel feet on floor, bum on chair." },
+      { category: "Sitting Movement", title: "Grounding", description: "Feel feet on floor, bum on chair." },  
       
-      // --- 50 NEW SITTING MOVEMENT ACTIVITIES ---
       { category: "Sitting Movement", title: "Double Knee Lift", description: "Lift both knees simultaneously. Engage abs. Hold 2s." },
       { category: "Sitting Movement", title: "Seated Windshield Wipers", description: "Knees together, sway legs side to side." },
       { category: "Sitting Movement", title: "Ankle Flex/Point", description: "Point toes, flex feet. Alternating. 20 reps." },
