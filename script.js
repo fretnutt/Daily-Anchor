@@ -849,7 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
       { category: "Sitting Movement", title: "Keyboard Width", description: "Bring elbows in to ribs. Rotate forearms out. Open chest while typing." },
 
 
-### 2\. The "Neck Mobility & Relief" Block (Full & Consolidated)
+
 
       // --- NECK MOBILITY & RELIEF (Refined & Expanded) ---
       { category: "Neck Mobility & Relief", title: "The Owl Turn", description: "Sit tall. Turn head to look over right shoulder. Hold 5s. Repeat left." },
