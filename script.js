@@ -4669,10 +4669,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Helper: Get Random ---
+    // --- Helper: Get Random Item from List ---
     function getRandomActivity(list) {
         if (!list || list.length === 0) return null;
         return list[Math.floor(Math.random() * list.length)];
+    }
+
+    // --- Helper: Get Random Item from Category ---
+    function getRandomByCategory(categoryName) {
+        const items = allActivities.filter(a => a.category === categoryName);
+        return getRandomActivity(items);
     }
 
     // --- Event Listeners ---
@@ -4684,26 +4690,102 @@ document.addEventListener('DOMContentLoaded', () => {
 
     categoryButtons.forEach(button => {
         button.addEventListener('click', () => {
-            // Remove active state from all buttons
-            categoryButtons.forEach(b => b.style.backgroundColor = 'white');
-            categoryButtons.forEach(b => b.style.color = 'var(--text-light)');
-            categoryButtons.forEach(b => b.style.borderColor = 'var(--accent-color)');
-
-            // Set active state for clicked
+            // UI Update: Active State
+            categoryButtons.forEach(b => {
+                b.style.backgroundColor = 'white';
+                b.style.color = 'var(--text-light)';
+                b.style.borderColor = 'var(--accent-color)';
+            });
             button.style.backgroundColor = 'var(--accent-color)';
             button.style.color = 'var(--primary-hover)';
             button.style.borderColor = 'var(--primary-hover)';
 
             const category = button.getAttribute('data-category');
-            const filtered = allActivities.filter(a => a.category === category);
             
-            if (filtered.length > 0) {
-                if (category === "Orienteering" && filtered[0].isGenerator) {
-                     displayActivity(filtered[0]); 
+            // --- NEW LOGIC: MIND-BODY-SPIRIT SEQUENCE ---
+            // If the user selects a Movement category, generate a combo.
+            if (category === "Sitting Movement" || category === "Standing Movement") {
+                
+                // 1. Get the Movement
+                const movementList = allActivities.filter(a => a.category === category);
+                const movement = getRandomActivity(movementList);
+
+                // 2. Get a Mantra (Spirit)
+                const mantra = getRandomByCategory("Mantras");
+
+                // 3. Get a Breath (Mind/Body connection)
+                const breath = getRandomByCategory("Guided Breathing");
+
+                // 4. Display the Combo
+                if (movement && mantra && breath) {
+                    displaySequence(movement, mantra, breath);
                 } else {
-                    displayActivity(getRandomActivity(filtered));
+                    // Fallback if data is missing
+                    displayActivity(movement);
+                }
+
+            } else {
+                // Standard behavior for other categories
+                const filtered = allActivities.filter(a => a.category === category);
+                if (filtered.length > 0) {
+                    if (category === "Orienteering" && filtered[0].isGenerator) {
+                         displayActivity(filtered[0]); 
+                    } else {
+                        displayActivity(getRandomActivity(filtered));
+                    }
                 }
             }
         });
     });
-});
+
+    // --- NEW FUNCTION: Display the Sequence ---
+    function displaySequence(movement, mantra, breath) {
+        // Reset Animation
+        activityOutput.classList.remove('animate-in');
+        void activityOutput.offsetWidth; 
+        activityOutput.classList.add('animate-in');
+
+        // Clear previous
+        answerArea.innerHTML = '';
+        answerArea.className = ''; 
+        activityOutput.innerHTML = ''; 
+
+        // Container for the sequence
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '20px';
+
+        // 1. Movement Block
+        const moveBlock = document.createElement('div');
+        moveBlock.innerHTML = `
+            <div class="activity-category-tag">💪 Body: ${categoryPrettyNames[movement.category]}</div>
+            <h3 style="margin-top:5px;">${movement.title}</h3>
+            <p>${movement.description}</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+        `;
+
+        // 2. Breath Block
+        const breathBlock = document.createElement('div');
+        breathBlock.innerHTML = `
+            <div class="activity-category-tag">🌬️ Breath: Breathwork</div>
+            <h3 style="margin-top:5px;">${breath.title}</h3>
+            <p>${breath.description}</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+        `;
+
+        // 3. Mantra Block
+        const mantraBlock = document.createElement('div');
+        mantraBlock.innerHTML = `
+            <div class="activity-category-tag">💭 Spirit: Mindset Anchor</div>
+            <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.3rem; margin-top:10px;">"${mantra.description}"</p>
+        `;
+
+        container.appendChild(moveBlock);
+        container.appendChild(breathBlock);
+        container.appendChild(mantraBlock);
+
+        activityOutput.appendChild(container);
+    }
+
+}); // End of DOMContentLoaded
