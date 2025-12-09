@@ -4703,10 +4703,9 @@ document.addEventListener('DOMContentLoaded', () => {
         void activityOutput.offsetWidth; // Trigger reflow
         activityOutput.classList.add('animate-in');
 
-        // Clear areas
-        answerArea.innerHTML = '';
-        answerArea.className = ''; 
+        // Clear content
         activityOutput.innerHTML = ''; 
+        if (answerArea) { answerArea.innerHTML = ''; answerArea.className = ''; }
 
         // 1. Create Tag (Category Name)
         const prettyName = categoryPrettyNames[activity.category] || activity.category;
@@ -4722,6 +4721,7 @@ document.addEventListener('DOMContentLoaded', () => {
         titleElement.textContent = activity.title || "Daily Reflection";
         if(activity.category === "Mantras") titleElement.textContent = "Mantra of the Day";
         if(activity.category === "Journal Prompt") titleElement.textContent = "Reflect on This";
+        if(activity.category === "Mind Games") titleElement.textContent = "Brain Teaser";
         activityOutput.appendChild(titleElement);
 
         // 3. Create Content
@@ -4735,8 +4735,12 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent = 'Reveal Alignment';
             btn.className = 'show-answer-button';
             btn.onclick = () => {
-                answerArea.innerHTML = `<p>${game.answer}</p>`;
-                answerArea.classList.add('visible');
+                // Append answer directly to card
+                const ans = document.createElement('p');
+                ans.innerHTML = `<strong>Alignment:</strong> ${game.answer}`;
+                ans.style.marginTop = '15px';
+                ans.style.fontWeight = 'bold';
+                activityOutput.appendChild(ans);
                 btn.remove();
             };
             activityOutput.appendChild(btn);
@@ -4751,8 +4755,20 @@ document.addEventListener('DOMContentLoaded', () => {
                  btn.textContent = 'Show Solution';
                  btn.className = 'show-answer-button';
                  btn.onclick = () => {
-                     answerArea.innerHTML = `<p>${activity.answer}</p>`;
-                     answerArea.classList.add('visible');
+                     // FIX: Append answer directly to the card
+                     const ans = document.createElement('div');
+                     ans.innerHTML = `<strong>Answer:</strong> ${activity.answer}`;
+                     
+                     // Add some styling to make it pop
+                     ans.style.marginTop = '20px';
+                     ans.style.padding = '15px';
+                     ans.style.backgroundColor = '#f0fdf4'; // Light green background
+                     ans.style.borderRadius = '8px';
+                     ans.style.border = '1px solid #bbf7d0';
+                     ans.style.color = '#166534';
+                     ans.style.animation = 'fadeIn 0.5s ease';
+                     
+                     activityOutput.appendChild(ans);
                      btn.remove();
                  };
                  activityOutput.appendChild(btn);
