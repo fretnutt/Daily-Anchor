@@ -4703,20 +4703,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const category = button.getAttribute('data-category');
             
             // --- NEW LOGIC: MIND-BODY-SPIRIT SEQUENCE ---
-            // If the user selects a Movement category, generate a combo.
-            if (category === "Sitting Movement" || category === "Standing Movement") {
+            
+            // 1. Define which categories trigger the full sequence
+            const comboCategories = [
+                "Sitting Movement",
+                "Standing Movement",
+                "Posture Check",
+                "Neck Mobility & Relief",
+                "Floor Work (Yoga & Stretching)",
+                "Pain Management",
+                "Sensory Grounding"
+            ];
+
+            // 2. Check if the clicked category is in our list
+            if (comboCategories.includes(category)) {
                 
-                // 1. Get the Movement
+                // A. Get the Main Activity (The Body/Physical anchor)
                 const movementList = allActivities.filter(a => a.category === category);
                 const movement = getRandomActivity(movementList);
 
-                // 2. Get a Mantra (Spirit)
+                // B. Get a Mantra (Spirit)
                 const mantra = getRandomByCategory("Mantras");
 
-                // 3. Get a Breath (Mind/Body connection)
+                // C. Get a Breath (Mind/Breath connection)
                 const breath = getRandomByCategory("Guided Breathing");
 
-                // 4. Display the Combo
+                // D. Display the Combo
                 if (movement && mantra && breath) {
                     displaySequence(movement, mantra, breath);
                 } else {
@@ -4725,7 +4737,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
             } else {
-                // Standard behavior for other categories
+                // Standard behavior for non-physical categories (Mind Games, etc.)
                 const filtered = allActivities.filter(a => a.category === category);
                 if (filtered.length > 0) {
                     if (category === "Orienteering" && filtered[0].isGenerator) {
@@ -4756,7 +4768,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.style.flexDirection = 'column';
         container.style.gap = '20px';
 
-        // 1. Movement Block
+        // 1. Body/Movement Block
         const moveBlock = document.createElement('div');
         moveBlock.innerHTML = `
             <div class="activity-category-tag">💪 Body: ${categoryPrettyNames[movement.category]}</div>
