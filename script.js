@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const activityOutput = document.getElementById('activity-output');
+    const activityOutput = document.getElementById('activity-output');  AIzaSyDp0ssJQTcJdib7F4ispri9FxQ5hZxnO8Y
     const answerArea = document.getElementById('answer-area');
     const randomizeButton = document.getElementById('randomize-button');
     const categoryButtons = document.querySelectorAll('.category-button');
