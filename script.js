@@ -1,3 +1,5 @@
+// GEMINI_API_KEY is loaded from config/config.js — see config/config.example.js for setup instructions.
+
 document.addEventListener('DOMContentLoaded', () => {
     const activityOutput = document.getElementById('activity-output');  
     const answerArea = document.getElementById('answer-area');
@@ -5157,6 +5159,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayActivity(movement);
                 }
 
+            } else if (category === "AI-Discovery") {
+                fetchGeminiActivity();
             } else {
                 // Standard behavior for non-physical categories (Mind Games, etc.)
                 const filtered = allActivities.filter(a => a.category === category);
@@ -5170,6 +5174,80 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // --- AI DISCOVERY: Fetch a wellness movement from Gemini AI ---
+    async function fetchGeminiActivity() {
+        const output = document.getElementById('activity-output');
+
+        // Show a loading state while the AI thinks
+        output.innerHTML = '';
+        const loadingTag = document.createElement('div');
+        loadingTag.className = 'activity-category-tag';
+        loadingTag.textContent = '✨ AI Thinking...';
+        const loadingTitle = document.createElement('h2');
+        loadingTitle.className = 'animate-in';
+        loadingTitle.textContent = 'Searching for a new movement...';
+        const loadingBody = document.createElement('p');
+        loadingBody.textContent = 'Connecting to Gemini AI to find something unique for you.';
+        output.appendChild(loadingTag);
+        output.appendChild(loadingTitle);
+        output.appendChild(loadingBody);
+
+        try {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: "Suggest a 1-minute workplace wellness movement or stretch. Provide a short Title and 2 sentences of Instructions." }]
+                        }]
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!aiText) {
+                throw new Error('Unexpected response format from Gemini API');
+            }
+
+            const tag = document.createElement('div');
+            tag.className = 'activity-category-tag';
+            tag.textContent = '✨ AI Discovery';
+
+            const title = document.createElement('h2');
+            title.className = 'animate-in';
+            title.textContent = 'New Discovery';
+
+            const body = document.createElement('p');
+            body.textContent = aiText;
+
+            output.innerHTML = '';
+            output.appendChild(tag);
+            output.appendChild(title);
+            output.appendChild(body);
+        } catch (error) {
+            console.error("Gemini Error:", error);
+            output.innerHTML = '';
+            const errTag = document.createElement('div');
+            errTag.className = 'activity-category-tag';
+            errTag.textContent = 'Connection Paused';
+            const errTitle = document.createElement('h2');
+            errTitle.textContent = 'Oops!';
+            const errBody = document.createElement('p');
+            errBody.textContent = 'Could not connect to the AI right now. Please check your API key or try a standard category.';
+            output.appendChild(errTag);
+            output.appendChild(errTitle);
+            output.appendChild(errBody);
+        }
+    }
 
     // --- NEW FUNCTION: Display the Sequence ---
     function displaySequence(movement, mantra, breath) {
