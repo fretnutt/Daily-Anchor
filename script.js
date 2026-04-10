@@ -1,5 +1,5 @@
 // Replace YOUR_API_KEY_HERE with your Gemini API key from https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = 'YOUR_API_KEY_HERE';
+const GEMINI_API_KEY = 'AIzaSyDp0ssJQTcJdib7F4ispri9FxQ5hZxnO8Y';
 
 document.addEventListener('DOMContentLoaded', () => {
     const activityOutput = document.getElementById('activity-output');
