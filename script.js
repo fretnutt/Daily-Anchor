@@ -3,6 +3,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const answerArea = document.getElementById('answer-area');
     const randomizeButton = document.getElementById('randomize-button');
     const categoryButtons = document.querySelectorAll('.category-button');
+    const emergencyButton = document.getElementById('emergency-reset');
+    const silentModeToggle = document.getElementById('silent-mode-toggle');
+    let emergencyCountdown = null;
+    let isSilentMode = false;
+    let activeDeescalationKit = null;
+    let lastKitFamily = null;
+    let familyCursor = 0;
 
     // 1. Mappings for professional display names
     const categoryPrettyNames = {
@@ -24,7 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
         "Workspace Zen": "Environment",
         "Creative Spark": "Creative Spark",
         "Productivity Flow": "Deep Work",
-        "Evening Wind-Down": "Shutdown Ritual"
+        "Evening Wind-Down": "Shutdown Ritual",
+        "Combo Activity": "Complete Anchor",
     };
 
     // 2. Icons for the cards
@@ -47,8 +55,114 @@ document.addEventListener('DOMContentLoaded', () => {
         "Workspace Zen": "🪴",
         "Creative Spark": "💡",
         "Productivity Flow": "⚡",
-        "Evening Wind-Down": "🌙"
+        "Evening Wind-Down": "🌙",
+        "Combo Activity": "🧩",
     };
+
+    const comboSourceCategories = [
+        "Sitting Movement",
+        "Standing Movement",
+        "Posture Check",
+        "Neck Mobility & Relief",
+        "Floor Work (Yoga & Stretching)",
+        "Pain Management",
+        "Sensory Grounding",
+    ];
+
+    const comboMantras = [
+        "I am safe right now, and I can slow this down.",
+        "My job is not to win the fight; my job is to serve with clarity.",
+        "I can be firm and calm at the same time.",
+        "This call is temporary. I choose my response.",
+        "I can unclench my body and keep control of my tone.",
+        "I respond with skill, not adrenaline.",
+        "I can protect my peace and still do my role well.",
+        "I can pause, breathe, and return to empathy.",
+    ];
+
+    const goalPrompts = [
+        "Lower activation before speaking: exhale long for three breaths, relax jaw/shoulders, then continue the call.",
+        "Reset role-focus: deliver one empathy sentence, one clear next step, and one calm boundary.",
+        "Unclench seated tension now: drop shoulders, release hands, soften jaw, and keep feet grounded for 20 seconds.",
+        "Choose de-escalation over winning: keep voice slower than normal for the next 60 seconds.",
+        "If heart rate feels high, pause speaking for one breath cycle, then summarize the customer's concern in neutral language.",
+        "Finish this call in control: stay respectful, document facts only, and avoid reactive phrasing.",
+    ];
+
+    const breathPrompts = [
+        "Physiological sigh: inhale, quick top-up inhale, then long slow exhale.",
+        "Box breath: inhale 4, hold 4, exhale 4, hold 4.",
+        "Extended exhale: inhale 4, exhale 8 through pursed lips.",
+        "Silent straw breath: inhale nose, exhale slowly through tiny lips.",
+        "Low nasal breathing: slow inhale and even slower exhale for 3 cycles.",
+        "Soft jaw breath: unclench jaw and exhale until your shoulders drop.",
+    ];
+
+    const deescalationKits = [
+        { tag: "🚨 ACTION: VAGAL BRAKE", goal: "Double-inhale through nose, then exhale through pursed lips for 15s.", body: "Rub the outer rims of your ears firmly with your thumbs.", mantra: "My breath is the boss of my heart." },
+        { tag: "🚨 ACTION: ISOMETRIC RESET", goal: "Clench glutes and thighs as hard as possible for 10 seconds.", body: "Press your palms together at your chest as hard as you can.", mantra: "The heat is leaving; the logic is returning." },
+        { tag: "🚨 ACTION: PERIPHERAL VISION", goal: "Soften your eyes and see the far left and right at once.", body: "Without moving your head, trace the wall-meets-ceiling line with your eyes.", mantra: "I see the room; I am larger than this call." },
+        { tag: "🚨 ACTION: AUDITORY SCAN", goal: "Close eyes for 2 seconds and identify the quietest sound in the room.", body: "Tragus press: gently press the small ear flap inward.", mantra: "I am the calm center of this noise." },
+        { tag: "🚨 ACTION: SALIVATION HACK", goal: "Move your tongue around your mouth to generate saliva.", body: "Neck tilt: chin down 1 inch and rotate slowly left.", mantra: "My body is safe; my mind is clear." },
+        { tag: "🚨 ACTION: MICRO-RESISTANCE", goal: "Hook index fingers together and pull apart for 10 seconds.", body: "Finger fans: spread fingers wide, then claw 5 times.", mantra: "I have the strength to remain soft." },
+        { tag: "🚨 ACTION: BOX PULSE", goal: "Inhale 4s, hold 4s, exhale 4s, hold 4s.", body: "Wrist circles: rotate slowly like unscrewing a lightbulb.", mantra: "One square breath, one steady step." },
+        { tag: "🚨 ACTION: TACTILE DETAIL", goal: "Find three textures within reach (metal, plastic, fabric).", body: "Thumb-to-finger taps as fast as possible.", mantra: "I am here, in this room, in this moment." },
+        { tag: "🚨 ACTION: COLD VISUALIZATION", goal: "Imagine holding a freezing ice cube in your dominant hand.", body: "Shoulder blade squeeze 5s, then drop.", mantra: "Cool logic over heated emotion." },
+        { tag: "🚨 ACTION: VESTIBULAR TILT", goal: "Lean torso 15 degrees left, then 15 degrees right.", body: "Ankle flex: point and flex toes in your shoes 10 times.", mantra: "I am balanced, even when the air is heavy." },
+        { tag: "🚨 ACTION: CEREBRAL MATH", goal: "Subtract 7 from 100 repeatedly for 20 seconds.", body: "Eyebrow lift and lower to release forehead tension.", mantra: "Logic is my shield; patience is my tool." },
+        { tag: "🚨 ACTION: HOLLOW EXHALE", goal: "Blow air through teeth like a soft 'shhhh'.", body: "Forearm stroke from elbow to wrist.", mantra: "I release the pressure; I retain the power." },
+        { tag: "🚨 ACTION: LUMBAR ANCHOR", goal: "Press lower back into the chair until the spine flattens.", body: "Big toe press into floor while lifting other toes.", mantra: "I am grounded. I am unshakable." },
+        { tag: "🚨 ACTION: VOCAL RESONANCE", goal: "Hum a low steady note internally.", body: "Neck lengthen: imagine string pulling head upward.", mantra: "My vibration is steady; my words are kind." },
+        { tag: "🚨 ACTION: GRAVITY DROP", goal: "Imagine hips made of lead sinking deeper into the chair.", body: "Knee spreads against invisible resistance.", mantra: "I am heavy, rooted, and unbothered." },
+        { tag: "🚨 ACTION: SPATIAL MAPPING", goal: "Identify distance between you and the farthest wall.", body: "Gently close eyes and look upward behind lids.", mantra: "I have space; I have time; I have air." },
+        { tag: "🚨 ACTION: BUTTERFLY TAP", goal: "Cross arms over chest and alternate shoulder taps.", body: "Clavicle rub below collarbones.", mantra: "In through the nose, out through the chaos." },
+        { tag: "🚨 ACTION: SPECTRUM SCAN", goal: "Find five blue items in the room.", body: "Interlace fingers and push palms away.", mantra: "I see the facts; I leave the friction." },
+        { tag: "🚨 ACTION: VACUUM", goal: "Exhale all air, hold 3 seconds, then let air return naturally.", body: "Scapula slides down toward back pockets.", mantra: "I am the master of my own oxygen." },
+        { tag: "🚨 ACTION: MICRO-BALANCE", goal: "Lift one foot 1 inch and hold still for 10 seconds.", body: "Toe curls like grabbing a pencil.", mantra: "One point of focus, one calm response." },
+        { tag: "🚨 ACTION: TEMPERATURE SHIFT", goal: "Rub palms fast for 10 seconds until warm.", body: "Place warm palms gently over closed eyes.", mantra: "Cooling the fire; clearing the wire." },
+        { tag: "🚨 ACTION: CATEGORY ALPHA", goal: "Name five animals starting with C.", body: "Chin tucks (double-chin motion) 3 times.", mantra: "My logic is active; my ego is resting." },
+        { tag: "🚨 ACTION: INTERNAL PULSE", goal: "Find pulse in wrist/neck and count 10 steady beats.", body: "Wrist flex: fingers down, then up.", mantra: "I set the pace; the caller follows me." },
+        { tag: "🚨 ACTION: SPATIAL PIVOT", goal: "Silently point to north, east, south, west in your room.", body: "Shoulder shrugs: lift, hold 3s, drop.", mantra: "I am oriented. I am here. I am safe." },
+        { tag: "🚨 ACTION: STRAW EXHALE", goal: "Inhale nose, exhale through tiny straw lips.", body: "Elbow circles with hands on shoulders.", mantra: "Controlled breath. Controlled response." },
+        { tag: "🚨 ACTION: STATUE", goal: "Freeze still with minimal movement for 15 seconds.", body: "Slow head scan left then right.", mantra: "I am the mountain; the wind passes over me." },
+        { tag: "🚨 ACTION: COLOR BLEND", goal: "Find one red and one white object; imagine pink blend.", body: "Finger interlace and push palms away.", mantra: "My mind is sharp. My heart is calm." },
+        { tag: "🚨 ACTION: DESK PIANO", goal: "Play fast silent piano on your desk.", body: "Thumb circles clockwise.", mantra: "Finding the rhythm. Keeping the flow." },
+        { tag: "🚨 ACTION: BOWLING BALL", goal: "Imagine heavy bowling ball in your stomach rooting you down.", body: "Gentle seated torso twist.", mantra: "Heavy base. Light mind. Steady hands." },
+        { tag: "🚨 ACTION: HISS", goal: "Make a near-silent 'sssss' until all air is gone.", body: "Jaw drop and gentle side-to-side sway.", mantra: "Releasing the steam. Retaining the skill." },
+        { tag: "🚨 ACTION: GRIP", goal: "Squeeze chair armrests hard for 10 seconds.", body: "Finger fans until slight tension.", mantra: "I hold the power, not the stress." },
+        { tag: "🚨 ACTION: SCANNING", goal: "Look far left with eyes only, then far right. Repeat 5x.", body: "Neck lengthen with slight chin tuck.", mantra: "Scanning for peace. Finding my center." },
+        { tag: "🚨 ACTION: MENU RECALL", goal: "Silently list your last meal in detail.", body: "Slow full eye rolls twice.", mantra: "I am in the present. I am in control." },
+        { tag: "🚨 ACTION: COLD PLUNGE", goal: "Imagine splashing ice-cold water on your face and hold 5s.", body: "Shake wrists as if drying hands.", mantra: "I cool the core to clear the mind." },
+        { tag: "🚨 ACTION: MIRROR", goal: "Lift left corner of mouth, then right. Repeat 5x.", body: "Eyebrow pump up/down rapidly.", mantra: "I control my face; I control my tone." },
+        { tag: "🚨 ACTION: BRACED SPINE", goal: "Interlace fingers behind head and press head back into hands.", body: "Elbow squeeze toward centerline.", mantra: "I am the support I need right now." },
+        { tag: "🚨 ACTION: RHYTHM SYNC", goal: "Tap heart for 4 beats, then exhale for 8 counts.", body: "Rapid thumb-to-finger taps.", mantra: "My rhythm is steady; my mind is ready." },
+        { tag: "🚨 ACTION: INTERNAL SCAN", goal: "Imagine a bright wave clearing your brain.", body: "Eye figure-8 horizontal trace.", mantra: "Clearing the screen to see the truth." },
+        { tag: "🚨 ACTION: SECOND HAND", goal: "Track exactly 20 seconds on a timer.", body: "Ankle circles 5 each direction.", mantra: "This call is a moment; I am the hour." },
+        { tag: "🚨 ACTION: VOCAL SHAPE", goal: "Silently form exaggerated A-E-I-O-U.", body: "Shoulder shrug up 5s then drop with sigh.", mantra: "My voice is an instrument of peace." },
+        { tag: "🚨 ACTION: SPINAL ZIP", goal: "Imagine zipper from tailbone to crown.", body: "Seated spine twist looking over each shoulder.", mantra: "Aligned, centered, and untouchable." },
+        { tag: "🚨 ACTION: GEOMETRY SCAN", goal: "Identify 3 circles, 3 squares, 3 triangles in view.", body: "Neck glide forward then back.", mantra: "I see the shapes; I ignore the noise." },
+        { tag: "🚨 ACTION: TEXTURAL SLIDE", goal: "Rub palms on thighs in long slow strokes.", body: "Hand clasp tight, then splay wide.", mantra: "Feeling the surface; finding my center." },
+        { tag: "🚨 ACTION: SILENT VOWEL", goal: "Shape Ooo-Aaa-Eee with throat only (no sound).", body: "Neck glide forward 1 inch then retract.", mantra: "My voice is clear; my mind is steady." },
+        { tag: "🚨 ACTION: SOLE PRESS", goal: "Press heels into floor until calves tighten for 10s.", body: "Toe wiggles as fast as possible.", mantra: "I am rooted to the floor; the noise is just air." },
+        { tag: "🚨 ACTION: REVERSE LOGIC", goal: "Count backward from 30 by 3s.", body: "Wrist flex toward screen, then down.", mantra: "Logic is my lead; emotion is my passenger." },
+        { tag: "🚨 ACTION: FRAME SCAN", goal: "Trace the four corners of your monitor with eyes only.", body: "Shoulder drop: inhale high then release all tension.", mantra: "I see the data; I am separate from the drama." },
+        { tag: "🚨 ACTION: DESK HOOK", goal: "Hook fingers under desk and pull up slightly for 10s.", body: "Finger claw hold against desk surface.", mantra: "I am the anchor; I hold the line." },
+        { tag: "🚨 ACTION: NASAL FILTER", goal: "Imagine inhaling through left nostril only.", body: "Press back of head gently into chair.", mantra: "Fresh air in; old tension out." },
+        { tag: "🚨 ACTION: LIP SOFTENER", goal: "Part lips slightly as if a card can slide between.", body: "Jaw slide gently forward.", mantra: "I am soft in the face and sharp in the mind." },
+        { tag: "🚨 ACTION: WEIGHT SHIFT", goal: "Shift full weight to left hip, then right hip.", body: "Ankle flex toes toward shins.", mantra: "I am balanced, even when the call is not." },
+        { tag: "🚨 ACTION: PARTS LIST", goal: "Name five car components silently.", body: "Palm rubs on knees for warmth.", mantra: "I am the professional; I know the facts." },
+        { tag: "🚨 ACTION: THERMAL FOCUS", goal: "Imagine warm sunlamp on back of neck.", body: "Slow right ear toward shoulder stretch.", mantra: "Warmth in my body; cool in my head." },
+        { tag: "🚨 ACTION: WEB PRESS", goal: "Press thumb-index webbing firmly for 10 seconds.", body: "Hand fan: splay fingers wide, then relax.", mantra: "Releasing the knot; finding the flow." },
+        { tag: "🚨 ACTION: DEPTH FOCUS", goal: "Look at a near object, then far wall, then near. Repeat 5x.", body: "Rapid blinks for 5 seconds.", mantra: "I choose what I focus on." },
+        { tag: "🚨 ACTION: SCAPULAR TUCK", goal: "Imagine tucking shoulder blades into back pockets.", body: "Chest opener with fingers interlaced behind back.", mantra: "Open heart, steady voice." },
+        { tag: "🚨 ACTION: GROCERY ALPHA", goal: "Name five foods that start with B.", body: "Gentle earlobe tugs down and out.", mantra: "Logic on. Emotion out." },
+        { tag: "🚨 ACTION: COOLING STRAW", goal: "Curl tongue and inhale through it like a straw.", body: "Forearm rub from wrist to elbow.", mantra: "Cooling the engine; clearing the line." },
+        { tag: "🚨 ACTION: SURFACE CHECK", goal: "Touch something cold then something warm.", body: "Press both palms flat to desk.", mantra: "I am here. I am solid. I am safe." },
+        { tag: "🚨 ACTION: VAULT", goal: "Press tongue to roof of mouth for 10 seconds.", body: "Neck extension up, then slowly down.", mantra: "Silent strength, clear intent." },
+        { tag: "🚨 ACTION: SPARK", goal: "Rapidly open and close fists 15 times.", body: "Arm shake loose at sides.", mantra: "Shaking off the static." },
+        { tag: "🚨 ACTION: HORIZON SHIFT", goal: "Find the furthest point you can see in the room.", body: "Trace a small figure-8 with your nose.", mantra: "I have perspective; I have peace." },
+        { tag: "🚨 ACTION: BALLOON BREATH", goal: "Inhale and imagine ribcage expanding sideways like a balloon.", body: "Side reach: right arm over head to left.", mantra: "I expand; the problem shrinks." },
+    ];
 
     // ==========================================
     //  MASSIVE DATABASE OF ACTIVITIES
@@ -5102,15 +5216,187 @@ document.addEventListener('DOMContentLoaded', () => {
         return getRandomActivity(items);
     }
 
+    function getRandomGoal() {
+        return getRandomActivity(goalPrompts);
+    }
+
+    function getRandomComboMantra() {
+        return getRandomActivity(comboMantras);
+    }
+
+    function getRandomBreathPrompt() {
+        return getRandomActivity(breathPrompts);
+    }
+
+    function clearEmergencyCountdown() {
+        if (emergencyCountdown) {
+            clearInterval(emergencyCountdown);
+            emergencyCountdown = null;
+        }
+    }
+
+    function setSilentMode(enabled) {
+        isSilentMode = enabled;
+        document.body.classList.toggle('silent-mode', enabled);
+        if (silentModeToggle) {
+            silentModeToggle.textContent = enabled ? '🌙 Silent Mode: On' : '🌙 Silent Mode: Off';
+            silentModeToggle.style.backgroundColor = enabled ? '#223028' : '#2f3e38';
+        }
+    }
+
+    function emergencyAccentColor() {
+        return isSilentMode ? '#9fb7aa' : '#E76F51';
+    }
+
+    function inferKitFamily(kit) {
+        const text = `${kit?.tag || ''} ${kit?.goal || ''} ${kit?.body || ''}`.toLowerCase();
+        if (/(inhale|exhale|breath|nostril|hum|hiss|oxygen|straw)/.test(text)) return 'breath';
+        if (/(vision|eyes|eye|scan|focus|look|color|geometry|horizon|blink)/.test(text)) return 'vision';
+        if (/(count|name|list|logic|math|identify|map|alpha|facts)/.test(text)) return 'cognitive';
+        return 'body';
+    }
+
+    function getSmartDeescalationKit() {
+        const families = ['breath', 'body', 'vision', 'cognitive'];
+        const targetFamily = families[familyCursor % families.length];
+        familyCursor += 1;
+
+        let pool = deescalationKits.filter((k) => inferKitFamily(k) === targetFamily);
+        if (pool.length === 0) {
+            pool = deescalationKits.filter((k) => inferKitFamily(k) !== lastKitFamily);
+        }
+        if (pool.length === 0) pool = deescalationKits;
+
+        const selected = getRandomActivity(pool);
+        lastKitFamily = inferKitFamily(selected);
+        return selected;
+    }
+
+    function showMantraStep(kit = activeDeescalationKit) {
+        clearEmergencyCountdown();
+        const accent = emergencyAccentColor();
+        activityOutput.innerHTML = `
+            <div class="activity-category-tag" style="background-color: ${isSilentMode ? '#2a3a33' : '#CCE3DE'}; color: ${isSilentMode ? '#d8e2dc' : '#557568'};">💭 MANTRA</div>
+            <h2 style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 2rem; color: ${accent};">
+                "${kit?.mantra || 'I can pause, breathe, and return to empathy.'}"
+            </h2>
+            <p>Take one final exhale. You are back in control.</p>
+            <button id="finish-reset-btn" style="margin-top:20px; padding: 8px 15px; background: transparent; color: ${isSilentMode ? '#cfe0d8' : '#353535'}; border: 1px solid ${isSilentMode ? '#4f6458' : '#6D6D6D'}; border-radius: 5px;">Finish Reset</button>
+        `;
+
+        const finishBtn = document.getElementById('finish-reset-btn');
+        if (finishBtn) {
+            finishBtn.addEventListener('click', () => {
+                window.location.reload();
+            });
+        }
+    }
+
+    function showMobilityStep(kit = activeDeescalationKit) {
+        clearEmergencyCountdown();
+        const accent = emergencyAccentColor();
+        activityOutput.innerHTML = `
+            <div class="activity-category-tag" style="background-color: ${isSilentMode ? '#2a3a33' : '#CCE3DE'}; color: ${isSilentMode ? '#d8e2dc' : '#557568'};">💪 BODY: MOBILITY</div>
+            <h2 style="color: ${accent};">Reset Movement</h2>
+            <p>${kit?.body || 'Drop shoulders, soften jaw, and release hand tension.'}</p>
+            <button id="next-step-btn" style="margin-top:20px; padding: 10px 20px; background: ${isSilentMode ? '#33463c' : '#6B9080'}; color: white; border-radius: 5px;">Next: The Mantra</button>
+        `;
+
+        const nextBtn = document.getElementById('next-step-btn');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => showMantraStep(kit));
+        }
+    }
+
+    function startDeescalationSequence() {
+        clearEmergencyCountdown();
+        if (!isSilentMode) setSilentMode(true);
+        activeDeescalationKit = getSmartDeescalationKit();
+        const kit = activeDeescalationKit;
+        const breath = getRandomBreathPrompt();
+        const remainingSteps = Math.random() < 0.5
+            ? [
+                { label: 'GOAL: GROUNDING (20s)', content: kit?.goal || 'Drop shoulders, release hands, soften jaw, and keep feet grounded.' },
+                { label: 'BODY: MOBILITY', content: kit?.body || 'Release shoulders, jaw, and hand tension.' },
+            ]
+            : [
+                { label: 'BODY: MOBILITY', content: kit?.body || 'Release shoulders, jaw, and hand tension.' },
+                { label: 'GOAL: GROUNDING (20s)', content: kit?.goal || 'Drop shoulders, release hands, soften jaw, and keep feet grounded.' },
+            ];
+        let timeLeft = 20;
+        const accent = emergencyAccentColor();
+
+        activityOutput.innerHTML = `
+            <div class="activity-category-tag" style="background-color: ${accent}; color: white;">${kit?.tag || '🚨 ACTION: GROUNDING'}</div>
+            <h2 style="color: ${accent}; margin-bottom: 4px;">CALL DE-ESCALATION COMBO</h2>
+            <p style="margin-top: 0; opacity: 0.9;">One-cycle reset: mantra, breath, then grounding/body.</p>
+            <div id="timer-display" style="font-size: 3rem; font-weight: bold; margin-top: 10px; color: ${accent};">${timeLeft}s</div>
+            <div id="timer-status" style="font-size: 0.95rem; margin-top: 2px; color: ${isSilentMode ? '#c8d6cf' : '#557568'};">Run the full sequence while timer counts down.</div>
+            <hr style="border: 0; border-top: 1px solid #32453b; margin: 15px 0;">
+            <div class="activity-category-tag" style="background-color: ${isSilentMode ? '#2a3a33' : '#CCE3DE'}; color: ${isSilentMode ? '#d8e2dc' : '#557568'};">1) MANTRA: RESET</div>
+            <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.35rem;">"${kit?.mantra || 'I can pause, breathe, and return to empathy.'}"</p>
+            <div class="activity-category-tag" style="background-color: ${isSilentMode ? '#2a3a33' : '#CCE3DE'}; color: ${isSilentMode ? '#d8e2dc' : '#557568'};">2) BREATH</div>
+            <p>${breath}</p>
+            <div class="activity-category-tag" style="background-color: ${isSilentMode ? '#2a3a33' : '#CCE3DE'}; color: ${isSilentMode ? '#d8e2dc' : '#557568'};">3) ${remainingSteps[0].label}</div>
+            <p>${remainingSteps[0].content}</p>
+            <div class="activity-category-tag" style="background-color: ${isSilentMode ? '#2a3a33' : '#CCE3DE'}; color: ${isSilentMode ? '#d8e2dc' : '#557568'};">4) ${remainingSteps[1].label}</div>
+            <p>${remainingSteps[1].content}</p>
+            <button id="finish-reset-btn" style="margin-top:20px; padding: 8px 15px; background: transparent; color: ${isSilentMode ? '#cfe0d8' : '#353535'}; border: 1px solid ${isSilentMode ? '#4f6458' : '#6D6D6D'}; border-radius: 5px;">Return to Work</button>
+        `;
+        if (answerArea) {
+            answerArea.innerHTML = '';
+            answerArea.className = '';
+        }
+
+        const finishBtn = document.getElementById('finish-reset-btn');
+        if (finishBtn) {
+            finishBtn.addEventListener('click', () => {
+                window.location.reload();
+            });
+        }
+
+        emergencyCountdown = setInterval(() => {
+            timeLeft -= 1;
+            const timerElement = document.getElementById('timer-display');
+            if (timerElement) timerElement.innerText = `${timeLeft}s`;
+
+            if (timeLeft <= 0) {
+                clearEmergencyCountdown();
+                const status = document.getElementById('timer-status');
+                if (status) status.innerText = 'Timer complete. Finish with one long exhale, then continue your call.';
+                if (timerElement) timerElement.innerText = 'Done';
+            }
+        }, 1000);
+    }
+
     // --- Event Listeners ---
+    if (emergencyButton) {
+        emergencyButton.addEventListener('click', startDeescalationSequence);
+    }
+    if (silentModeToggle) {
+        silentModeToggle.addEventListener('click', () => setSilentMode(!isSilentMode));
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.altKey && event.key.toLowerCase() === 'r') {
+            const targetTag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : '';
+            if (targetTag === 'input' || targetTag === 'textarea') return;
+            event.preventDefault();
+            startDeescalationSequence();
+        }
+    });
+
     randomizeButton.addEventListener('click', () => {
+        clearEmergencyCountdown();
         if (allActivities.length > 0) {
             displayActivity(getRandomActivity(allActivities));
         }
     });
 
     categoryButtons.forEach(button => {
+        if (button.id === 'emergency-reset') return;
         button.addEventListener('click', () => {
+            clearEmergencyCountdown();
             // UI Update: Active State
             categoryButtons.forEach(b => {
                 b.style.backgroundColor = 'white';
@@ -5122,36 +5408,29 @@ document.addEventListener('DOMContentLoaded', () => {
             button.style.borderColor = 'var(--primary-hover)';
 
             const category = button.getAttribute('data-category');
+            if (!category) return;
             
             // --- NEW LOGIC: MIND-BODY-SPIRIT SEQUENCE ---
             
             // 1. Define which categories trigger the full sequence
-            const comboCategories = [
-                "Sitting Movement",
-                "Standing Movement",
-                "Posture Check",
-                "Neck Mobility & Relief",
-                "Floor Work (Yoga & Stretching)",
-                "Pain Management",
-                "Sensory Grounding"
-            ];
+            const comboCategories = ["Combo Activity"];
 
             // 2. Check if the clicked category is in our list
             if (comboCategories.includes(category)) {
                 
                 // A. Get the Main Activity (The Body/Physical anchor)
-                const movementList = allActivities.filter(a => a.category === category);
+                const movementList = allActivities.filter(a => comboSourceCategories.includes(a.category));
                 const movement = getRandomActivity(movementList);
 
-                // B. Get a Mantra (Spirit)
-                const mantra = getRandomByCategory("Mantras");
+                // B. Get a Mantra
+                const mantra = getRandomComboMantra();
 
-                // C. Get a Breath (Mind/Breath connection)
-                const breath = getRandomByCategory("Guided Breathing");
+                // C. Get a Goal
+                const goal = getRandomGoal();
 
                 // D. Display the Combo
-                if (movement && mantra && breath) {
-                    displaySequence(movement, mantra, breath);
+                if (movement && mantra && goal) {
+                    displaySequence(movement, mantra, goal);
                 } else {
                     // Fallback if data is missing
                     displayActivity(movement);
@@ -5172,7 +5451,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- NEW FUNCTION: Display the Sequence ---
-    function displaySequence(movement, mantra, breath) {
+    function displaySequence(movement, mantra, goal) {
         // Reset Animation
         activityOutput.classList.remove('animate-in');
         void activityOutput.offsetWidth; 
@@ -5189,6 +5468,13 @@ document.addEventListener('DOMContentLoaded', () => {
         container.style.flexDirection = 'column';
         container.style.gap = '20px';
 
+        const protocolIntro = document.createElement('div');
+        protocolIntro.innerHTML = `
+            <div class="activity-category-tag">⚠️ Call De-escalation Combo</div>
+            <p style="margin-top:6px;">For panic, anger spikes, tunnel vision, and muscle clenching during difficult customer calls.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+        `;
+
         // 1. Body/Movement Block
         const moveBlock = document.createElement('div');
         moveBlock.innerHTML = `
@@ -5198,25 +5484,25 @@ document.addEventListener('DOMContentLoaded', () => {
             <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
         `;
 
-        // 2. Breath Block
-        const breathBlock = document.createElement('div');
-        breathBlock.innerHTML = `
-            <div class="activity-category-tag">🌬️ Breath: Breathwork</div>
-            <h3 style="margin-top:5px;">${breath.title}</h3>
-            <p>${breath.description}</p>
+        // 2. Mantra Block
+        const mantraBlock = document.createElement('div');
+        mantraBlock.innerHTML = `
+            <div class="activity-category-tag">💭 Mantra</div>
+            <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.3rem; margin-top:10px;">"${mantra}"</p>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
         `;
 
-        // 3. Mantra Block
-        const mantraBlock = document.createElement('div');
-        mantraBlock.innerHTML = `
-            <div class="activity-category-tag">💭 Spirit: Mindset Anchor</div>
-            <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.3rem; margin-top:10px;">"${mantra.description}"</p>
+        // 3. Goal Block
+        const goalBlock = document.createElement('div');
+        goalBlock.innerHTML = `
+            <div class="activity-category-tag">🎯 Goal</div>
+            <p>${goal}</p>
         `;
 
+        container.appendChild(protocolIntro);
         container.appendChild(moveBlock);
-        container.appendChild(breathBlock);
         container.appendChild(mantraBlock);
+        container.appendChild(goalBlock);
 
         activityOutput.appendChild(container);
     }

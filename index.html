@@ -41,6 +41,11 @@
             line-height: 1.7;
         }
 
+        body.silent-mode {
+            background-color: #0f1412;
+            color: #d8e2dc;
+        }
+
         .container {
             max-width: 800px;
             width: 100%;
@@ -50,6 +55,12 @@
             box-shadow: var(--shadow-soft);
             text-align: center;
             border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        body.silent-mode .container {
+            background: #111816;
+            border-color: #26332d;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
         }
 
         /* --- Header Styling --- */
@@ -83,6 +94,11 @@
             transition: var(--transition);
             position: relative;
             overflow: hidden;
+        }
+
+        body.silent-mode .activity-display {
+            background-color: #17201c;
+            border-color: #31433a;
         }
 
         .activity-display h2 {
@@ -173,6 +189,12 @@
             border-color: var(--primary-color);
         }
 
+        body.silent-mode .category-button {
+            background-color: #1b2621;
+            color: #b8c9c0;
+            border-color: #32453b;
+        }
+
         /* --- Hidden Areas & Answers --- */
         #answer-area {
             margin-top: 20px;
@@ -212,10 +234,26 @@
             color: white;
         }
 
+        /* Emergency panic/de-escalation trigger */
+        #emergency-reset:active {
+            transform: scale(0.95);
+            background-color: #d65d41 !important;
+        }
+
+        #timer-display {
+            animation: pulse 1s infinite;
+        }
+
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
         }
 
         .animate-in {
@@ -264,8 +302,14 @@
                 <button class="category-button" data-category="Journal Prompt">Reflection</button>
                 <button class="category-button" data-category="Social Connection">Connection</button> 
                 <button class="category-button" data-category="Workspace Zen">Workspace Zen</button>
-                <!-- Add this button -->
-                <button class="category-button ai-btn" data-category="AI-Discovery" style="background-color: #6B9080; color: white; border: none; grid-column: span 2; font-weight: bold;">✨ AI Discovery</button>
+                <button id="emergency-reset" class="category-button"
+                    style="background-color: #E76F51; color: white; border: none; grid-column: span 2; font-weight: bold; font-size: 1.1em; box-shadow: 0 4px 10px rgba(231, 111, 81, 0.3);">
+                    🚨 CALL DE-ESCALATION COMBO
+                </button>
+                <button id="silent-mode-toggle" class="category-button"
+                    style="background-color: #2f3e38; color: #e2e8e5; border: none; grid-column: span 2; font-weight: bold;">
+                    🌙 Silent Mode: Off
+                </button>
             </div>
         </div>
         
